@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta property="og:title" content="Năm mới của bé tzy ♥️🫶" />
+<meta property="og:description" content="Xem tới cuối nhé 🥰🫶" />
+<meta property="og:image" content="https://chucemnammoi.netlify.app/preview.png" />
+<meta property="og:url" content="https://chucemnammoi.netlify.app/" />
+<meta property="og:type" content="website" />
+    <meta charset="UTF-8">
+    <title>Năm mới của bé tzy ♥️🫶</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: system-ui, sans-serif;
+            text-align: center;
+        }
+
+        .box {
+            padding: 30px;
+            border: 2px solid white;
+            border-radius: 20px;
+            box-shadow: 0 0 25px rgba(255,255,255,0.8);
+            max-width: 320px;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 22px;
+            font-size: 16px;
+            border-radius: 999px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 0 12px white;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .hint {
+            margin-top: 15px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="box">
+        <h1>Vì lý do úng dụng của bạn<br>
+            không hỗ trợ một số chức <br>
+            năng làm cho trải nghiệm <br>
+            của bạn không tốt vùi lòng <br>
+            bạn chuyển sang chrome 🫶</h1>
+        <button onclick="openChrome()">ĐI ĐẾN CHROME</button>
+
+        <div class="hint">
+            (Nếu không có Chrome,<br>
+            trang sẽ hỏi trình duyệt khác)
+        </div>
+    </div>
+
+    <script>
+        function openChrome() {
+            location.href =
+                "intent://chucemnammoi.netlify.app/#Intent;" +
+                "scheme=https;" +
+                "package=com.android.chrome;" +
+                "end;";
+        }
+    </script>
+
+</body>
+</html>
