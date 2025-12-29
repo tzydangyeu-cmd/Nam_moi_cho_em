@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Năm mới của bé tzy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        /* ===== FONT ===== */
+        @font-face {
+            font-family: 'TzyFont';
+            src: url('https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/SVN-Dancing-script.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'TzyFont', cursive;
+        }
+
+        body {
+            background: black;
+            overflow: hidden;
+        }
+
+        /* ===== INTRO ===== */
+        .intro {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10;
+            color: white;
+        }
+
+        .title {
+            font-size: 30px;
+            white-space: nowrap;
+            text-shadow:
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 20px #fff;
+        }
+
+        .sub-text {
+            position: absolute;
+            right: 0;
+            bottom: -22px;
+            font-size: 12px;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .title {
+                font-size: 26px;
+            }
+
+            .sub-text {
+                font-size: 12px;
+            }
+        }
+
+        /* ===== CANVAS ===== */
+        #fireworks {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+
+        /* ===== MESSAGE BOX ===== */
+
+        #messageBox {
+            position: fixed;
+            inset: 0;
+            margin: auto;
+
+            width: 360px;
+            height: 360px;
+
+            border: 2px solid white;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(2px);
+
+            padding: 20px;
+            overflow: hidden;
+
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1.2s ease;
+
+            z-index: 1000;
+        }
+
+        #messageBox.show {
+            opacity: 1;
+            pointer-events: auto;
+
+        }
+
+        /* Nội dung chữ */
+        #messageContent {
+            height: 100%;
+            overflow-y: auto;
+            color: white;
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        #closeBtn {
+            position: fixed;
+            left: 50%;
+            top: calc(50% + 360px / 2 + 20px);
+            /* dưới khung */
+            transform: translateX(-50%);
+
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+
+            border: 2px solid white;
+            color: white;
+            font-size: 22px;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 14px white;
+
+            z-index: 99999;
+
+        }
+
+        #messageWrapper {
+            position: fixed;
+            inset: 0;
+            margin: auto;
+            width: 360px;
+            height: 360px;
+            z-index: 1000;
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- INTRO -->
+    <div class="intro">
+        <div class="title">Bắt đầu năm mới thoi bé tzy ♥️</div>
+        <div class="sub-text">nhấn vào màn hình đi bé</div>
+    </div>
+
+    <!-- CANVAS -->
+    <canvas id="fireworks"></canvas>
+    <!-- MESSAGE BOX -->
+    <div id="messageBox">
+        <div id="messageContent"></div>
+    </div>
+    <div id="closeBtn">✕</div>
+    <script>
+
+
+        const canvas = document.getElementById("fireworks");
+        const ctx = canvas.getContext("2d");
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener("resize", resize);
+        let messageShown = false;
+        let started = false;
+        let fireworks = [];
+        let maxFireworks = 4; // 🔥 số pháo tối đa xuất hiện cùng lúc (bạn đổi số này tùy ý)
+        let particles = [];
+        /* ================== ÂM THANH ================== */
+
+        // 🔹 Âm thanh nền (phát khi click intro)
+        const bgMusic = new Audio("https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/am_thanh_nen_phao_hoa.mp3");
+        bgMusic.loop = true;
+        bgMusic.volume = 0.5;
+
+        // 🔹 Âm thanh phóng pháo (3 loại)
+        const launchSounds = [
+            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/sao.mp3",
+            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/sao.mp3",
+            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/sao.mp3"
+        ];
+
+        // 🔹 Âm thanh nổ pháo (3 loại)
+        const explodeSounds = [
+            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/no1.mp3",
+            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/no1.mp3",
+            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/no1.mp3"
+        ];
+
+        // 🔹 Hàm phát âm thanh ngẫu nhiên
+        function playRandomSound(list, volume = 0.7) {
+            const sound = new Audio(list[Math.floor(Math.random() * list.length)]);
+            sound.volume = volume;
+            sound.play();
+        }
+
+        /* ===== CLICK ĐỂ BẮT ĐẦU ===== */
+        document.body.addEventListener("click", () => {
+            if (started) return;
+            started = true;
+
+            // 🔊 Phát nhạc nền
+            bgMusic.play();
+
+            const intro = document.querySelector(".intro");
+            intro.style.transition = "opacity 1.5s ease";
+            intro.style.opacity = "0";
+            setTimeout(() => intro.remove(), 1600);
+            if (!messageShown) {
+                messageShown = true;
+                setTimeout(() => {
+                    messageBox.classList.add("show");
+                    typeMessage();
+                }, 10000); // ⏱ 10 GIÂY
+
+            }
+        });
+
+
+        /* ===== PHÁO HOA BAY LÊN ===== */
+        class Firework {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = canvas.height;
+                this.vy = -(8 + Math.random() * 4);
+                this.vx = (Math.random() - 0.5) * 0.6;
+
+                this.alpha = 1;
+                this.state = "up";
+                this.wait = Math.random() * 60; // 0–1s
+                this.color = `hsl(${Math.random() * 360},100%,70%)`;
+                // 🔊 Âm thanh phóng pháo (ngẫu nhiên)
+                playRandomSound(launchSounds, 0.6);
+                this.swingAngle = Math.random() * Math.PI * 2; // góc sóng ban đầu
+                this.swingSpeed = 0.1; // tốc độ lắc (bạn có thể chỉnh)
+                this.swingRange = 0.1; // biên độ lắc trái phải
+            }
+
+            update() {
+                if (this.state === "up") {
+
+                    // bay lên
+                    this.y += this.vy;
+                    this.vy *= 0.98;
+
+                    // dao động nhẹ khi còn bay nhanh
+                    // tăng góc dao động
+                    this.swingAngle += this.swingSpeed;
+
+                    // tỉ lệ dao động giảm dần khi gần đỉnh
+                    const speedFactor = Math.min(Math.abs(this.vy) / 6, 1);
+                    const dynamicSwing = this.swingRange * speedFactor;
+
+                    if (Math.abs(this.vy) > 0.3) {
+                        this.x += Math.sin(this.swingAngle) * dynamicSwing;
+                    }
+
+                    // gần đạt đỉnh → bắt đầu mờ
+                    if (Math.abs(this.vy) <= 0.4) {
+                        this.alpha -= 0.03;
+
+                        // tàn hình hoàn toàn → CHUYỂN SANG WAIT
+                        if (this.alpha <= 0) {
+                            this.alpha = 0;
+                            this.state = "wait";
+                            this.wait = Math.floor(Math.random() * 60); // 0–1s
+                        }
+                    }
+                }
+
+                else if (this.state === "wait") {
+                    this.wait--;
+                    if (this.wait <= 0) {
+                        this.explode();
+                        this.state = "done";
+                    }
+                }
+            }
+
+            draw() {
+                if (this.state === "done") return;
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+            explode() {
+
+                // 🔊 Âm thanh nổ (ngẫu nhiên)
+                playRandomSound(explodeSounds, 0.8);
+
+                for (let i = 0; i < 90; i++) {
+                    particles.push(new Particle(this.x, this.y, this.color));
+                }
+            }
+
+        }
+
+        /* ===== HẠT NỔ ===== */
+        class Particle {
+            constructor(x, y, color) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 2;
+                this.x = x;
+                this.y = y;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.005;
+                this.color = color;
+                this.size = Math.random() * 2 + 1;
+            }
+
+            update() {
+                this.vx *= 0.97;
+                this.vy *= 0.97;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        /* ===== LOOP ===== */
+        function animate() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (
+                started &&
+                fireworks.length < maxFireworks && // 👈 GIỚI HẠN Ở ĐÂY
+                Math.random() < 0.01 // cường độ phóng
+            ) {
+                fireworks.push(new Firework());
+            }
+
+
+            fireworks = fireworks.filter(f => f.state !== "done");
+            particles = particles.filter(p => p.alpha > 0);
+
+            fireworks.forEach(f => {
+                f.update();
+                f.draw();
+            });
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+        /* ===== MESSAGE DATA ===== */
+        const messageText = `🎆 Vậy là những tiếng pháo hoa chào mừng năm mới 2026 đã vang lên khắp mọi nơi rồi đó bé 🥰 🎆
+Cũng ngay khoảnh khắc này, năm 2025 chính thức khép lại 💫 Và với anh, đây là năm vô cùng đặc biệt nhất trong cuộc đời anh 💖
+Là năm mà mối tình đầu của anh bắt đầu… không ai khác, chính là em... bé Tzy của anh 🥰
+⏳ Tính đến thời điểm này, chúng mình đã yêu nhau được 94 ngày, 10 giờ và 13 phút rồi đó 😚 Em biết khum~
+Khoảng thời gian chưa quá dài, nhưng đủ để anh nhận ra rằng em quan trọng với anh nhiều đến nhường nào 💞
+💭 Khoảng thời gian gần đây anh bận hơi nhiều nên có đôi lúc anh trả lời bé hơi chậm. Nhưng anh luôn cố gắng tranh thủ từng chút một để quan tâm em nhiều nhất có thể 🫶
+Nếu có lúc nào đó anh vô tình làm em khó chịu, làm em buồn 😔 hay làm những điều mà em không thích, thì bé cứ nói thẳng với anh nhé 💌
+Anh không dám chắc mình sửa được 100% ngay lập tức, vì có những thói quen chưa tốt cần thời gian để thay đổi 🥺 nhưng anh luôn sẵn sàng lắng nghe và cố gắng vì em 🌱
+🌸 Bây giờ đã là năm 2026 rồi, và đây cũng là năm bận rộn nhất đối với anh. Anh có một kỳ thi rất quan trọng là kỳ thi quyết định tương lai của anh sau này 📚
+Vì vậy, có thể anh sẽ không dành cho em nhiều thời gian như trước 😞 và đôi khi anh có thể làm em thất vọng, làm em buồn, thậm chí khiến em khóc 💧
+Nhưng em đừng lo nhé 🤍 Anh chỉ đang cố gắng cho tương lai của chúng mình, để sau này hai đứa mình đỡ vất vả và cơ cực hơn 🌈
+💗 Em cũng đừng lo rằng anh nhắn tin hay quan tâm đến người con gái nào khác nha. Vì hiện tại, hoặc là anh đang quan tâm em, hoặc là anh đang cố gắng xây dựng hạnh phúc tương lai cho đôi ta 💍
+Ngoài hai điều đó ra, không có gì khác cả đâu nhé 💗
+🌍 Anh biết khoảng cách giữa chúng ta khiến em phải chịu nhiều thiệt thòi😔 những điều mà lẽ ra một người con gái khi yêu nên được nhận trọn vẹn 💔
+Anh thương điều đó rất nhiều 🥺 Và anh chỉ mong rằng chúng ta sẽ cùng nhau vượt qua mọi khó khăn, trở ngại, đặc biệt là những điều nhỏ nhặt nhưng dễ khiến người ta thay lòng đổi dạ 💪💖
+🎉 Anh chúc bé một năm 2026 thật nhiều niềm vui và hạnh phúc nha 😘
+Mong rằng điều gì em mong cũng sẽ thành hiện thực ✨ muốn gì được đó 🎁 làm gì cũng gặt hái được kết quả tốt đẹp 🌻
+Và anh hy vọng năm 2026 này, bé sẽ cười thật nhiều thật nhiều 😊💞
+🫶 Hoàngg Thịnhh mãi yêu bé Tzy 🫶💖`;
+
+        const messageBox = document.getElementById("messageBox");
+        const messageContent = document.getElementById("messageContent");
+        const closeBtn = document.getElementById("closeBtn");
+
+        let charIndex = 0;
+
+        /* Hiệu ứng gõ chữ */
+        function typeMessage() {
+            if (charIndex < messageText.length) {
+                messageContent.textContent += messageText.charAt(charIndex);
+                charIndex++;
+                messageContent.scrollTop = messageContent.scrollHeight;
+                setTimeout(typeMessage, 70);
+            } else {
+                closeBtn.style.display = "flex";
+            }
+
+        }
+
+        /* Đóng khung */
+        closeBtn.addEventListener("click", () => {
+            messageBox.classList.remove("show");
+            closeBtn.style.display = "none";
+        });
+        function showCloseButton() {
+            closeBtn.style.display = "flex";
+
+        }
+    </script>
+
+</body>
+
+</html>
