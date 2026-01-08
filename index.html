@@ -3,10 +3,10 @@
 
 <head>
     <meta property="og:title" content="Năm mới của bé tzy🫶♥️" />
-<meta property="og:description" content="Xem tới cuối nhé 🥰🫶" />
-<meta property="og:image" content="https://chucemnammoi.netlify.app/preview.png" />
-<meta property="og:url" content="https://chucemnammoi.netlify.app/" />
-<meta property="og:type" content="website" />
+    <meta property="og:description" content="Xem tới cuối nhé 🥰🫶" />
+    <meta property="og:image" content="https://chucemnammoi.netlify.app/preview.png" />
+    <meta property="og:url" content="https://chucemnammoi.netlify.app/" />
+    <meta property="og:type" content="website" />
     <meta charset="UTF-8">
     <title>Năm mới của bé tzy🫶♥️</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -175,7 +175,31 @@
     </div>
     <div id="closeBtn">✕</div>
     <script>
+        let audioCtx;
+        let audioUnlocked = false;
+        function ensureAudioRunning() {
+            if (!audioCtx) return;
+            if (audioCtx.state === "suspended") {
+                audioCtx.resume();
+            }
+        }
+        function unlockAudioHard() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
 
+            gain.gain.value = 0.0001; // gần như im lặng
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.01);
+
+        }
+        const soundBuffers = {
+            bg: null,
+            launch: [],
+            explode: []
+        };
 
         const canvas = document.getElementById("fireworks");
         const ctx = canvas.getContext("2d");
@@ -186,60 +210,96 @@
         }
         resize();
         window.addEventListener("resize", resize);
+        async function loadSound(url) {
+            const res = await fetch(url);
+            const arrayBuffer = await res.arrayBuffer();
+            return await audioCtx.decodeAudioData(arrayBuffer);
+
+        }
         let messageShown = false;
         let started = false;
+        let soundsReady = false;
         let fireworks = [];
         let maxFireworks = 4; // 🔥 số pháo tối đa xuất hiện cùng lúc (bạn đổi số này tùy ý)
         let particles = [];
+        let introDone = false;
         /* ================== ÂM THANH ================== */
 
-        // 🔹 Âm thanh nền (phát khi click intro)
-        const bgMusic = new Audio("https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/am_thanh_nen_phao_hoa.mp3");
-        bgMusic.loop = true;
-        bgMusic.volume = 0.5;
-
-        // 🔹 Âm thanh phóng pháo (3 loại)
-        const launchSounds = [
-            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/sao.mp3",
-            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/sao.mp3",
-            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/sao.mp3"
-        ];
-
-        // 🔹 Âm thanh nổ pháo (3 loại)
-        const explodeSounds = [
-            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/no1.mp3",
-            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/no1.mp3",
-            "https://raw.githubusercontent.com/ngotranhoangthinhhtk8c-cmd/Phao_nam_moi250812/main/no1.mp3"
-        ];
-
         // 🔹 Hàm phát âm thanh ngẫu nhiên
-        function playRandomSound(list, volume = 0.7) {
-            const sound = new Audio(list[Math.floor(Math.random() * list.length)]);
-            sound.volume = volume;
-            sound.play();
+        function playSound(buffer, volume = 1, loop = false) {
+            if (!audioUnlocked || !buffer) return;
+            ensureAudioRunning();
+            const source = audioCtx.createBufferSource();
+            const gainNode = audioCtx.createGain();
+
+            source.buffer = buffer;
+            source.loop = loop;
+
+            gainNode.gain.value = volume;
+
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            source.start(0);
+
         }
 
         /* ===== CLICK ĐỂ BẮT ĐẦU ===== */
-        document.body.addEventListener("click", () => {
+        document.body.addEventListener("click", async () => {
             if (started) return;
             started = true;
 
-            // 🔊 Phát nhạc nền
-            bgMusic.play();
+            /* ================= MỞ KHÓA AUDIO ================= */
 
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx.resume();
+            unlockAudioHard();
+            audioUnlocked = true;
+            // 🔊 TEST AudioContext sống hay chết
+            const osc = audioCtx.createOscillator();
+            osc.frequency.value = 440;
+            osc.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+
+
+            /* ================= LOAD ÂM THANH ================= */
+            try {
+                soundBuffers.bg = await loadSound(
+                    "/sounds/bg.mp3"
+                );
+
+                soundBuffers.launch.push(
+                    await loadSound("/sounds/sao.mp3")
+                );
+
+                soundBuffers.explode.push(
+                    await loadSound("/sounds/no1.mp3")
+                );
+
+                /* ================= PHÁT NHẠC NỀN ================= */
+                playSound(soundBuffers.bg, 0.5, true);
+                soundsReady = true;
+            } catch (e) {
+                console.error("lỗi load âm thanh:", e);
+            }
+
+            /* ================= ẨN INTRO ================= */
             const intro = document.querySelector(".intro");
             intro.style.transition = "opacity 1.5s ease";
             intro.style.opacity = "0";
-            setTimeout(() => intro.remove(), 1600);
-            if (!messageShown) {
-                messageShown = true;
-                setTimeout(() => {
-                    messageBox.classList.add("show");
-                    typeMessage();
-                }, 10000); // ⏱ 10 GIÂY
+            setTimeout(() => {
+                intro.remove();
+                introDone = true;   // ✅ CHỐT THỜI ĐIỂM
+            }, 1600);
 
-            }
+            /* ================= DELAY 10s → HIỆN LỜI TÂM TƯ ================= */
+            setTimeout(() => {
+                messageBox.classList.add("show");
+                typeMessage();
+            }, 10000); // ⏱ 10 GIÂY SAU KHI CLICK
         });
+
 
 
         /* ===== PHÁO HOA BAY LÊN ===== */
@@ -255,7 +315,16 @@
                 this.wait = Math.random() * 60; // 0–1s
                 this.color = `hsl(${Math.random() * 360},100%,70%)`;
                 // 🔊 Âm thanh phóng pháo (ngẫu nhiên)
-                playRandomSound(launchSounds, 0.6);
+                if (soundsReady && soundBuffers.launch.length > 0) {
+                    playSound(
+                        soundBuffers.launch[
+                        Math.floor(Math.random() * soundBuffers.launch.length)
+                        ],
+                        0.6
+                    );
+                }
+
+
                 this.swingAngle = Math.random() * Math.PI * 2; // góc sóng ban đầu
                 this.swingSpeed = 0.1; // tốc độ lắc (bạn có thể chỉnh)
                 this.swingRange = 0.1; // biên độ lắc trái phải
@@ -317,7 +386,16 @@
             explode() {
 
                 // 🔊 Âm thanh nổ (ngẫu nhiên)
-                playRandomSound(explodeSounds, 0.8);
+                if (soundsReady && soundBuffers.explode.length > 0) {
+                    playSound(
+                        soundBuffers.explode[
+                        Math.floor(Math.random() * soundBuffers.explode.length)
+                        ],
+                        0.8
+                    );
+                }
+
+
 
                 for (let i = 0; i < 90; i++) {
                     particles.push(new Particle(this.x, this.y, this.color));
@@ -369,6 +447,8 @@
 
             if (
                 started &&
+                introDone &&        // 🔥 CHỐT Ở ĐÂY
+                soundsReady &&      // 🔥 CHỐT ÂM THANH
                 fireworks.length < maxFireworks && // 👈 GIỚI HẠN Ở ĐÂY
                 Math.random() < 0.01 // cường độ phóng
             ) {
